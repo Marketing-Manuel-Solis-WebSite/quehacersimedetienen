@@ -10,6 +10,7 @@ import { Outfit } from 'next/font/google'
 import { usePathname } from 'next/navigation'
 import { track } from '@vercel/analytics/react' // 👈 Importamos track
 import { officesPhoneMap, DEFAULT_PHONE, DEFAULT_PHONE_LINK } from './officesPhoneMap'
+import { pushDataLayerEvent, trackConversion } from '../lib/tracking'
 
 const font = Outfit({ 
   subsets: ['latin'], 
@@ -64,14 +65,26 @@ export default function HeaderProfessional() {
 
   // --- ⚡️ EVENTO DE RASTREO DE LLAMADA ⚡️ ---
   const handleCallClick = () => {
-    // Enviamos el evento a Vercel
+    // Vercel Analytics (existente)
     track('Call Header Click', {
       phoneNumber: phoneNumber,
       location: 'header_main',
       page: pathname || 'unknown',
       timestamp: new Date().toISOString()
     });
-    console.log(`Event tracked: Call Click on ${phoneNumber}`);
+
+    // Fase 3: dataLayer push para GTM → GA4
+    pushDataLayerEvent('phone_click', {
+      event_category: 'conversion',
+      event_label: 'header_phone_button',
+      phone_number: phoneNumber,
+    });
+
+    // Fase 4: Flight Check — registro propio
+    trackConversion({
+      type: 'phone_click',
+      label: 'header_phone_button',
+    });
   };
 
   const callText = language === 'es' ? 'Llámanos para una consulta:' : 'Call for a consultation:';

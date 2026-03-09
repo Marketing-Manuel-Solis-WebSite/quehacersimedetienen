@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { track } from '@vercel/analytics/react'; // 1. Importar track de Vercel
+import { pushDataLayerEvent, trackConversion } from '../lib/tracking';
 
 export default function WhatsAppButton() {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -22,20 +23,32 @@ export default function WhatsAppButton() {
   
   const handleClick = () => {
     window.open(whatsappUrl, '_blank');
-    
-    // 2. Vercel Analytics Tracking (NUEVO)
+
+    // Vercel Analytics (existente)
     track('Whatsapp Click', {
       location: 'floating_button',
       timestamp: new Date().toISOString()
     });
 
-    // 3. Google Analytics Tracking (EXISTENTE)
+    // Google Analytics gtag (existente)
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('event', 'whatsapp_click', {
         'event_category': 'contact',
         'event_label': 'whatsapp_button'
       });
     }
+
+    // Fase 3: dataLayer push para GTM → GA4
+    pushDataLayerEvent('whatsapp_click', {
+      event_category: 'conversion',
+      event_label: 'whatsapp_cta',
+    });
+
+    // Fase 4: Flight Check — registro propio
+    trackConversion({
+      type: 'whatsapp_click',
+      label: 'whatsapp_cta',
+    });
   };
 
   // Mensaje del Tooltip: Usamos el mensaje del cliente si existe, si no, uno por defecto
